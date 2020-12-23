@@ -1,0 +1,37 @@
+---
+suite: Test templates/scheduler/scheduler-deployment.yaml
+templates:
+  - templates/scheduler/scheduler-deployment.yaml
+tests:
+  - it: "should work"
+    asserts:
+      - isKind:
+          of: Deployment
+  - it: "should create multiple schedulers"
+    set:
+      scheduler:
+        replicas: 2
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 2
+  - it: "should create one scheduler if replicas is not specified"
+    set:
+        replicas: ~
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
+  # - it: "should have pod antiAffinity"
+  #   assert:
+  #     - equal:
+  #         path: deployment.spec.template.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution.topologyKey
+  #         value: "kubernetes.io/hostname"
+
+  - it: "should wait for migrations"
+    set:
+      executor: CeleryExecutor
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].args
+          value: ["airflow-migration-spinner", "--timeout=60"]
